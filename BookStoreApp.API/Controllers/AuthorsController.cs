@@ -24,12 +24,12 @@ namespace BookStoreApp.API.Controllers
 
         // GET: api/Authors
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Author>>> GetAuthors()
+        public async Task<ActionResult<IEnumerable<ReadOnlyAuthorDTO>>> GetAuthors()
         {
             try
             {
                 List<Author> authors = await _context.Authors.ToListAsync();
-                List<ReadOnlyAuthorDTO> authorsDTO = _mapper.Map<List<ReadOnlyAuthorDTO>>(authors);
+                IEnumerable<ReadOnlyAuthorDTO> authorsDTO = _mapper.Map<List<ReadOnlyAuthorDTO>>(authors);
                 return Ok(authorsDTO);
             }catch (Exception exp)
             {
