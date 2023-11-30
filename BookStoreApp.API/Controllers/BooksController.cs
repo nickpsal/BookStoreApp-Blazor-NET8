@@ -32,21 +32,37 @@ namespace BookStoreApp.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ReadOnlyBookDTO>>> GetBooks()
         {
-            var books = await _context.Books.Include(q=> q.Author).ProjectTo<ReadOnlyBookDTO>(_mapper.ConfigurationProvider).ToListAsync();
-            var booksDTO = _mapper.Map<IEnumerable<ReadOnlyBookDTO>>(books);
-            return Ok(booksDTO);
+            try
+            {
+                var books = await _context.Books.Include(q => q.Author).ProjectTo<ReadOnlyBookDTO>(_mapper.ConfigurationProvider).ToListAsync();
+                var booksDTO = _mapper.Map<IEnumerable<ReadOnlyBookDTO>>(books);
+                return Ok(booksDTO);
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError($"Error : {exp.Message}");
+                return BadRequest($"Error : {exp.Message}");
+            }
         }
 
         // GET: api/Books/5
         [HttpGet("{id}")]
         public async Task<ActionResult<DetailsBookDTO>> GetBook(int id)
         {
-            var book = await _context.Books.Include(q => q.Author).ProjectTo<DetailsBookDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(q=> q.Id == id);
-            if (book == null)
+            try
             {
-                return NotFound();
+                var book = await _context.Books.Include(q => q.Author).ProjectTo<DetailsBookDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(q => q.Id == id);
+                if (book == null)
+                {
+                    return NotFound();
+                }
+                return book;
             }
-            return book;
+            catch (Exception exp)
+            {
+                _logger.LogError($"Error : {exp.Message}");
+                return BadRequest($"Error : {exp.Message}");
+            }
         }
 
         // PUT: api/Books/5
@@ -54,33 +70,26 @@ namespace BookStoreApp.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutBook(int id, UpdateBookDTO bookDTO)
         {
-            if (id != bookDTO.Id)
-            {
-                return BadRequest();
-            }
-            var book = await _context.Books.FindAsync(id);
-            if (book is null)
-            {
-                return NotFound();
-            }
-            _mapper.Map(bookDTO, book);
-            _context.Entry(book).State = EntityState.Modified;
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await BookExists(id))
+                if (id != bookDTO.Id)
+                {
+                    return BadRequest();
+                }
+                var book = await _context.Books.FindAsync(id);
+                if (book is null || !await BookExists(id))
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+                _mapper.Map(bookDTO, book);
+                _context.Entry(book).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
             }
-            return NoContent();
+            catch (DbUpdateConcurrencyException exp)
+            {
+                _logger.LogError($"Error: {exp.Message}");
+            }
+            return BadRequest();
         }
 
         // POST: api/Books
@@ -88,25 +97,41 @@ namespace BookStoreApp.API.Controllers
         [HttpPost]
         public async Task<ActionResult<CreateBookDTO>> PostBook(ReadOnlyBookDTO bookDTO)
         {
-            var book = _mapper.Map<Book>(bookDTO);
-            _context.Books.Add(book);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction("GetBook", new { id = book.Id }, bookDTO);
+            try
+            {
+                var book = _mapper.Map<Book>(bookDTO);
+                _context.Books.Add(book);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction("GetBook", new { id = book.Id }, bookDTO);
+            }
+            catch (DbUpdateConcurrencyException exp)
+            {
+                _logger.LogError($"Error: {exp.Message}");
+            }
+            return BadRequest();
         }
 
         // DELETE: api/Books/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook(int id)
         {
-            var book = await _context.Books.FindAsync(id);
-            if (book == null)
+            try
             {
-                return NotFound();
-            }
+                var book = await _context.Books.FindAsync(id);
+                if (book == null)
+                {
+                    return NotFound();
+                }
 
-            _context.Books.Remove(book);
-            await _context.SaveChangesAsync();
-            return NoContent();
+                _context.Books.Remove(book);
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException exp)
+            {
+                _logger.LogError($"Error: {exp.Message}");
+            }
+            return BadRequest();
         }
 
         private async Task<bool> BookExists(int id)
