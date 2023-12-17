@@ -38,27 +38,22 @@ namespace BookStoreApp.API.Controllers
         {
             try
             {
-                var UserExists = userManager.FindByEmailAsync(userDTO.Email);
-                if (UserExists is null)
+                var user = _mapper.Map<ApiUser>(userDTO);
+                user.UserName = userDTO.Email;
+                var result = await userManager.CreateAsync(user, userDTO.Password);
+                if (!result.Succeeded)
                 {
-                    var user = _mapper.Map<ApiUser>(userDTO);
-                    user.UserName = userDTO.Email;
-                    var result = await userManager.CreateAsync(user, userDTO.Password);
-                    if (!result.Succeeded)
+                    foreach (var error in result.Errors)
                     {
-                        foreach (var error in result.Errors)
-                        {
-                            _logger.LogError(error.Code, error.Description);
-                            ModelState.AddModelError(error.Code, error.Description);
-                        }
-                        return BadRequest(ModelState);
+                        _logger.LogError(error.Code, error.Description);
+                        ModelState.AddModelError(error.Code, error.Description);
                     }
-                    await userManager.AddToRoleAsync(user, "User");
-                    return Accepted();
+                    return BadRequest(ModelState);
                 }
-                _logger.LogError("User with this email Adress already Exists");
-                return Problem("User with this email Adress already Exists");
-            }catch (Exception exp)
+                await userManager.AddToRoleAsync(user, "User");
+                return Accepted();
+            }
+            catch (Exception exp)
             {
                 _logger.LogError($"Error : {exp}");
                 return Problem($"Something went wrong in the {nameof(register)}", statusCode: 500);
