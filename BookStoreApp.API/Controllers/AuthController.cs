@@ -3,6 +3,7 @@ using BookStoreApp.API.Data;
 using BookStoreApp.API.Models;
 using BookStoreApp.API.Models.Dtos.User;
 using BookStoreApp.API.Static;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,7 @@ namespace BookStoreApp.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [AllowAnonymous]
     public class AuthController : ControllerBase
     {
         private readonly ILogger<AuthController> _logger;
